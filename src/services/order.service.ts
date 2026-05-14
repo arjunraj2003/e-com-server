@@ -50,7 +50,7 @@ export const placeOrder = async (
       if (!inventory || available < item.quantity) {
         throw new AppError(`Insufficient stock for ${item.variant.sku}. Available: ${available}, Required: ${item.quantity}`, 400);
       }
-      const price = Number(item.variant.price || item.variant.product.basePrice);
+      const price = Number(item.variant.product?.basePrice || 0) + Number(item.variant.price || 0);
       subtotal += price * item.quantity;
 
       orderItems.push({

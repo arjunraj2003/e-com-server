@@ -58,6 +58,11 @@ export const uploadImages = async (req: Request, res: Response, next: NextFuncti
   try {
     const files = req.files as Express.Multer.File[];
     const productImgRepo = AppDataSource.getRepository(ProductImage);
+    const productRepo = AppDataSource.getRepository(require('../models/Product').Product);
+
+    // Check if product already has a primary image in the DB
+    const existingPrimary = await productImgRepo.findOneBy({ productId: req.params.productId, isPrimary: true });
+
     const uploaded: ProductImage[] = [];
     for (const file of files) {
       const { url, publicId } = await uploadImage(file.path, 'ecommerce/products');
@@ -65,11 +70,18 @@ export const uploadImages = async (req: Request, res: Response, next: NextFuncti
         productId: req.params.productId,
         url,
         publicId,
-        isPrimary: uploaded.length === 0,
+        // Only mark as primary if no primary exists yet AND it's the first file in this batch
+        isPrimary: !existingPrimary && uploaded.length === 0,
       });
       await productImgRepo.save(img);
       uploaded.push(img);
     }
+
+    // Bust the Redis product cache so the next request fetches fresh data
+    const { cacheDel } = await import('../config/redis');
+    const product = await productRepo.findOneBy({ id: req.params.productId });
+    if (product?.slug) await cacheDel(`product:${product.slug}`);
+
     res.status(201).json({ success: true, data: uploaded });
   } catch (err) { next(err); }
 };
@@ -90,6 +102,13 @@ export const deleteImage = async (req: Request, res: Response, next: NextFunctio
     }
 
     await productImgRepo.remove(image);
+
+    // Bust the Redis product cache
+    const { cacheDel } = await import('../config/redis');
+    const productRepo = AppDataSource.getRepository(require('../models/Product').Product);
+    const product = await productRepo.findOneBy({ id: image.productId });
+    if (product?.slug) await cacheDel(`product:${product.slug}`);
+
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (err) { next(err); }
 };
