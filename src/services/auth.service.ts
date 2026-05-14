@@ -29,14 +29,15 @@ export const registerUser = async (data: {
   const user = userRepo().create({
     ...data,
     passwordHash: data.password, // BeforeInsert hashes it
-    emailVerificationOtp: otp,
-    emailOtpExpiresAt: otpExpiry,
+    isEmailVerified: true, // auto-verify for testing on Render
+    // emailVerificationOtp: otp,
+    // emailOtpExpiresAt: otpExpiry,
   });
   await userRepo().save(user);
 
-  await sendVerificationEmail(data.email, otp);
+  // await sendVerificationEmail(data.email, otp);
 
-  return { message: 'Registration successful. Check your email for OTP.' };
+  return { message: 'Registration successful. You can now log in.' };
 };
 
 export const verifyEmail = async (email: string, otp: string) => {
@@ -70,7 +71,7 @@ export const loginUser = async (email: string, password: string) => {
   });
   if (!user) throw new AppError('Invalid credentials', 401);
   if (!user.isActive) throw new AppError('Account disabled', 403);
-  if (!user.isEmailVerified) throw new AppError('Please verify your email first', 403);
+  // if (!user.isEmailVerified) throw new AppError('Please verify your email first', 403);
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) throw new AppError('Invalid credentials', 401);
