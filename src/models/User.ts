@@ -14,12 +14,19 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum AuthProvider {
+  LOCAL = 'local',
+  GOOGLE = 'google',
+  PHONE = 'phone',
+  GUEST = 'guest',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   email: string;
 
   @Column({ nullable: true })
@@ -28,14 +35,26 @@ export class User {
   @Column({ nullable: true })
   lastName: string;
 
-  @Column({ select: false })
+  @Column({ nullable: true, select: false })
   passwordHash: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
+  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.LOCAL })
+  authProvider: AuthProvider;
+
+  @Column({ nullable: true })
+  googleId: string;
+
   @Column({ default: false })
   isEmailVerified: boolean;
+
+  @Column({ default: false })
+  isPhoneVerified: boolean;
+
+  @Column({ default: false })
+  isGuest: boolean;
 
   @Column({ nullable: true, select: false })
   emailVerificationOtp: string;
@@ -52,7 +71,7 @@ export class User {
   @Column({ nullable: true, select: false })
   refreshToken: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   phone: string;
 
   @Column({ nullable: true })

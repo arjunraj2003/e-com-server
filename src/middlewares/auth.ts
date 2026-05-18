@@ -2,6 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../utils/tokens';
 import { AppError } from './errorHandler';
 
+declare global {
+  namespace Express {
+    interface User extends TokenPayload {}
+  }
+}
+
 export interface AuthRequest extends Request {
   user?: TokenPayload;
 }
